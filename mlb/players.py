@@ -49,7 +49,7 @@ for team in teams:
         for a in row.find_all('a'):
             player_info.append(team)
             player_info.append(a.getText().strip())
-            player_info.append(a.attrs.get('href', 'Not found'))
+            player_info.append(a.attrs.get('href', 'Not found').split("/")[-1])
         if player_info !=  []:
             players.append(player_info)
 
