@@ -1,4 +1,4 @@
-# from players import players
+from players import players
 
 import requests
 from bs4 import BeautifulSoup
@@ -21,36 +21,36 @@ headers = {
   'TE': 'trailers'
 }
 
-
-players = [['dbacks', 'Alek Thomas', '677950']]
 handedness =['R', 'L']
-
+player_stats = []
 
 for player in players:
-    player_stats = []
-    for hand in handedness:
-        url = f"https://baseballsavant.mlb.com/player-services/statcast-pitches-breakdown?playerId={player[-1]}&position=8&hand={hand}&pitchBreakdown=pitches&timeFrame=yearly&season=&pitchType=&count=&updatePitches=true"
+    if player[-1] != "Pitcher":    
+        for hand in handedness:
+            url = f"https://baseballsavant.mlb.com/player-services/statcast-pitches-breakdown?playerId={player[2].split('-')[-1]}&position=8&hand={hand}&pitchBreakdown=pitches&timeFrame=yearly&season=&pitchType=&count=&updatePitches=true"
 
-        r = requests.get(url, headers=headers)
+            r = requests.get(url, headers=headers)
 
-        parser = BeautifulSoup(r.content, "html.parser")
-        table = parser.find(id="detailedPitches")
+            parser = BeautifulSoup(r.content, "html.parser")
+            table = parser.find(id="detailedPitches")
 
-        headersTH = table.find_all('th')
-        headerlist = [h.text.strip() for h in headersTH[:]]
-        headerlist.insert(0, "Name")
-        headerlist.insert(2, "Team")
-        headerlist.insert(3, "Hand") 
+            headersTH = table.find_all('th')
+            headerlist = [h.text.strip() for h in headersTH[:]]
+            headerlist.insert(0, "Name")
+            headerlist.insert(2, "Team")
+            headerlist.insert(3, "Hand") 
     
-        rows = table.findAll('tr')[1:]
+            rows = table.findAll('tr')[1:]
     
-        for i in range(len(rows)):
-            row_cells = []
-            for td in rows[i].findAll('td'):
-                row_cells.append(td.getText().strip())
-            row_cells.insert(0, player[1])
-            row_cells.insert(2, player[0])
-            row_cells.insert(3, hand)
-            player_stats.append(row_cells)
+            for i in range(len(rows)):
+                row_cells = []
+                for td in rows[i].findAll('td'):
+                    row_cells.append(td.getText().strip())
+                row_cells.insert(0, player[1])
+                row_cells.insert(2, player[0])
+                row_cells.insert(3, hand)
+                player_stats.append(row_cells)
 
 df = pd.DataFrame(player_stats, columns=headerlist)
+
+print(df)

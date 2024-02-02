@@ -24,6 +24,7 @@ teams = ["dbacks", "braves", "orioles", "redsox", "cubs", "whitesox", "reds", "g
 teams = ["dbacks"]
 
 players = []
+position = ''
 
 # Setting up WebDriver
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
@@ -45,6 +46,11 @@ for team in teams:
     
     # Extracting player information
     for row in rows:
+        players_position = row.find('td', attrs = {"colspan": '2'})
+        if players_position:
+            position = players_position.get_text()
+            position = position[:len(position)-1]
+
         player_info = []
         for a in row.find_all('a'):
             player_info.append(team)
