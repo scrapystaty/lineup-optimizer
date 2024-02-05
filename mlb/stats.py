@@ -29,6 +29,8 @@ headers = {
 }
 
 handedness =['R', 'L']
+pitcher_headerlist = []
+hitter_headerlist = []
 player_stats = []
 pitcher_stats = []
 players = [['dbacks', 'Brandon Pfaadt', 'brandon-pfaadt-694297', 'Pitcher']]
@@ -44,10 +46,10 @@ for player in players:
             table = parser.find(id="detailedPitches")
 
             headersTH = table.find_all('th')
-            headerlist = [h.text.strip() for h in headersTH[:]]
-            headerlist.insert(0, "Name")
-            headerlist.insert(2, "Team")
-            headerlist.insert(3, "Hand") 
+            hitter_headerlist = [h.text.strip() for h in headersTH[:]]
+            hitter_headerlist.insert(0, "Name")
+            hitter_headerlist.insert(2, "Team")
+            hitter_headerlist.insert(3, "Hand") 
     
             rows = table.findAll('tr')[1:]
     
@@ -87,7 +89,7 @@ for player in players:
             runValues = parser.find("table", attrs = {"id": "runValues"})
             spinDirection = parser.find("table", attrs = {"id": "spinAxis"})
     
-            if not headerlist:
+            if not pitcher_headerlist:
                 pitchMovementHeaders = pitchMovement.findAll('th')
                 pitchMovementHeadersList = [h.text.strip() for h in pitchMovementHeaders[:]]
 
@@ -102,10 +104,10 @@ for player in players:
     
                 pitchMovementHeadersList_2 = pitchMovementHeadersList[2:]
                 pitchMovementHeadersList_2[0] = 'Name'
-                headerlist.extend(pitchMovementHeadersList_2)
-                headerlist.extend(detailedPitchesHeadersList[3:])
-                headerlist.extend(runValuesHeadersList[3:])
-                headerlist.extend(spinDirectionHeadersList[3:])
+                pitcher_headerlist.extend(pitchMovementHeadersList_2)
+                pitcher_headerlist.extend(detailedPitchesHeadersList[3:])
+                pitcher_headerlist.extend(runValuesHeadersList[3:])
+                pitcher_headerlist.extend(spinDirectionHeadersList[3:])
 
             pitchMovementRows = pitchMovement.findAll('tr')[2:]
             detailedPitchesRows = detailedPitches.findAll('tr')[1:]
@@ -160,5 +162,7 @@ for player in players:
 
         driver.quit()
 
-pitchers_df = pd.DataFrame(pitcher_stats, columns=headerlist)
-hitters_df = pd.DataFrame(player_stats, columns=headerlist)
+pitchers_df = pd.DataFrame(pitcher_stats, columns=pitcher_headerlist)
+hitters_df = pd.DataFrame(player_stats, columns=hitter_headerlist)
+
+print(pitchers_df)
