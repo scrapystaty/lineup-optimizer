@@ -33,7 +33,45 @@ pitcher_headerlist = []
 hitter_headerlist = []
 player_stats = []
 pitcher_stats = []
-players = [['dbacks', 'Brandon Pfaadt', 'brandon-pfaadt-694297', 'Pitcher']]
+players = [['dbacks', 'Miguel Castro', 'miguel-castro-612434', 'Pitcher']]
+
+# Proxy configuration
+PROXY = "127.0.0.1:24000"
+# Path to chromedriver executable
+PATH = "/opt/homebrew/Caskroom/chromedriver/121.0.6167.85/chromedriver-mac-arm64/chromedriver"
+
+chrome_options = webdriver.ChromeOptions()
+chrome_options.add_argument('--proxy-server=%s' % PROXY)
+
+timeout = 25
+
+driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+
+# pitcher function
+def missing_stats(pitches_less, pitches_more):  
+    pitches_needed = []
+    for row in pitches_more:
+        yearPitch = row.findAll('td')[0].getText().strip() + row.findAll('td')[1].getText().strip()
+        pitches_needed.append(yearPitch)
+    
+    pitches_got = []
+    for row in pitches_less:
+        yearPitch = row.findAll('td')[0].getText().strip() + row.findAll('td')[1].getText().strip()
+        pitches_got.append(yearPitch)
+
+    missing_pitch = []
+    for pitch in pitches_needed:
+        if pitch not in pitches_got:
+            missing_pitch.append(pitch)
+
+    missing_pitch_arr = []
+    missing_pitch_arr.append(missing_pitch[0][:4])
+    missing_pitch_arr.append(missing_pitch[0][4:])
+
+    for stat in spinDirectionRows[2:]:
+        missing_pitch_arr.append('') # appends empty string for value to keep the correct amount of cols
+    
+    spinDirection_stats.append(missing_pitch_arr) # appends missing pitch
 
 for player in players:
     if player[-1] != "Pitcher":    
@@ -62,107 +100,108 @@ for player in players:
                 row_cells.insert(3, hand)
                 player_stats.append(row_cells)
     else:
-        # Proxy configuration
-        PROXY = "127.0.0.1:24000"
-        # Path to chromedriver executable
-        PATH = "/opt/homebrew/Caskroom/chromedriver/121.0.6167.85/chromedriver-mac-arm64/chromedriver"
+        
 
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument('--proxy-server=%s' % PROXY)
+        url = f"https://baseballsavant.mlb.com/savant-player/{player[2]}?stats=statcast-r-pitching-mlb"
+        driver.get(url)
 
-        timeout = 25
+        detailedPitches_present = EC.visibility_of_element_located((By.XPATH, r'//*[@id="detailedPitches"]/tbody/tr[1]/td[2]/span'))
+        WebDriverWait(driver, timeout).until(detailedPitches_present)
 
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+        src = driver.page_source
+        parser = BeautifulSoup(src, "lxml")
 
-        for player in players:
-            url = f"https://baseballsavant.mlb.com/savant-player/{player[2]}?stats=statcast-r-pitching-mlb"
-            driver.get(url)
-
-            detailedPitches_present = EC.visibility_of_element_located((By.XPATH, r'//*[@id="detailedPitches"]/tbody/tr[1]/td[2]/span'))
-            WebDriverWait(driver, timeout).until(detailedPitches_present)
-
-            src = driver.page_source
-            parser = BeautifulSoup(src, "lxml")
-
-            pitchMovement = parser.find("table", attrs = {"id": "pitchMovement"})
-            detailedPitches = parser.find("table", attrs = {"id": "detailedPitches"})
-            runValues = parser.find("table", attrs = {"id": "runValues"})
-            spinDirection = parser.find("table", attrs = {"id": "spinAxis"})
+        pitchMovement = parser.find("table", attrs = {"id": "pitchMovement"})
+        pitchTracking = parser.find("table", attrs = {"id": "detailedPitches"})
+        runValues = parser.find("table", attrs = {"id": "runValues"})
+        spinDirection = parser.find("table", attrs = {"id": "spinAxis"})
     
-            if not pitcher_headerlist:
-                pitchMovementHeaders = pitchMovement.findAll('th')
-                pitchMovementHeadersList = [h.text.strip() for h in pitchMovementHeaders[:]]
+        if not pitcher_headerlist:
+            pitchMovementHeaders = pitchMovement.findAll('th')
+            pitchMovementHeadersList = [h.text.strip() for h in pitchMovementHeaders[:]]
 
-                detailedPitchesHeaders = detailedPitches.findAll('th')
-                detailedPitchesHeadersList = [h.text.strip() for h in detailedPitchesHeaders[:]]
+            pitchTrackingHeaders = pitchTracking.findAll('th')
+            pitchTrackingHeadersList = [h.text.strip() for h in pitchTrackingHeaders[:]]
 
-                runValuesHeaders = runValues.findAll('th')
-                runValuesHeadersList = [h.text.strip() for h in runValuesHeaders[:]]
+            runValuesHeaders = runValues.findAll('th')
+            runValuesHeadersList = [h.text.strip() for h in runValuesHeaders[:]]
 
-                spinDirectionHeaders = spinDirection.findAll('th')
-                spinDirectionHeadersList = [h.text.strip() for h in spinDirectionHeaders[:]]
+            spinDirectionHeaders = spinDirection.findAll('th')
+            spinDirectionHeadersList = [h.text.strip() for h in spinDirectionHeaders[:]]
     
-                pitchMovementHeadersList_2 = pitchMovementHeadersList[2:]
-                pitchMovementHeadersList_2[0] = 'Name'
-                pitcher_headerlist.extend(pitchMovementHeadersList_2)
-                pitcher_headerlist.extend(detailedPitchesHeadersList[3:])
-                pitcher_headerlist.extend(runValuesHeadersList[3:])
-                pitcher_headerlist.extend(spinDirectionHeadersList[3:])
+            pitchMovementHeadersList_2 = pitchMovementHeadersList[2:]
+            pitchMovementHeadersList_2[0] = 'Name'
+            pitcher_headerlist.extend(pitchMovementHeadersList_2)
+            pitcher_headerlist.extend(pitchTrackingHeadersList[3:])
+            pitcher_headerlist.extend(runValuesHeadersList[3:])
+            pitcher_headerlist.extend(spinDirectionHeadersList[3:])
 
-            pitchMovementRows = pitchMovement.findAll('tr')[2:]
-            detailedPitchesRows = detailedPitches.findAll('tr')[1:]
-            runValuesRows = runValues.findAll('tr')[1:]
-            spinDirectionRows = spinDirection.findAll('tr')[1:]
+        pitchMovementRows = pitchMovement.findAll('tr')[2:]
+        pitchTrackingRows = pitchTracking.findAll('tr')[1:]
+        runValuesRows = runValues.findAll('tr')[1:]
+        spinDirectionRows = spinDirection.findAll('tr')[1:]
     
-            pitcher_stats = []
-            pitcher2_stats = []
-            pitcher3_stats = []
-            pitcher4_stats = []
-            for i in range(len(pitchMovementRows)):
-                row_cells = []
-                for td in pitchMovementRows[i].findAll('td'):
-                    row_cells.append(td.getText().strip())
-                pitcher_stats.append(row_cells)
+        pitchMovement_stats = []
+        pitchTracking_stats = []
+        runValues_stats = []
+        spinDirection_stats = []
 
-            for i in range(len(detailedPitchesRows)):
-                row_cells = []
-                for td in detailedPitchesRows[i].findAll('td'):
-                    row_cells.append(td.getText().strip())
-                pitcher2_stats.append(row_cells)
+        for i in range(len(pitchMovementRows)):
+            row_cells = []
+            for td in pitchMovementRows[i].findAll('td'):
+                row_cells.append(td.getText().strip())
+            pitchMovement_stats.append(row_cells)
 
-            for i in range(len(runValuesRows)):
-                row_cells = []
-                for td in runValuesRows[i].findAll('td'):
-                    row_cells.append(td.getText().strip())
-                pitcher3_stats.append(row_cells)
+        for i in range(len(pitchTrackingRows)):
+            row_cells = []
+            for td in pitchTrackingRows[i].findAll('td'):
+                row_cells.append(td.getText().strip())
+            pitchTracking_stats.append(row_cells)
 
-            for i in range(len(spinDirectionRows)):
-                row_cells = []
-                for td in spinDirectionRows[i].findAll('td'):
-                    row_cells.append(td.getText().strip())
-                pitcher4_stats.append(row_cells)
+        for i in range(len(runValuesRows)):
+            row_cells = []
+            for td in runValuesRows[i].findAll('td'):
+                row_cells.append(td.getText().strip())
+            runValues_stats.append(row_cells)
 
-            for i in range(len(pitchMovementRows)):
-                for pitch in pitcher_stats:
-                    if pitch[1] == pitcher2_stats[i][1]:
-                        pitch.extend(pitcher2_stats[i][3:])
+        for i in range(len(spinDirectionRows)):
+            row_cells = []
+            for td in spinDirectionRows[i].findAll('td'):
+                row_cells.append(td.getText().strip())
+            spinDirection_stats.append(row_cells)
 
-            for i in range(len(pitchMovementRows)):
-                for pitch in pitcher_stats:
-                    if pitch[1] == pitcher3_stats[i][1]:
-                        pitch.extend(pitcher3_stats[i][3:])
+        if (len(pitchTrackingRows) > len(spinDirectionRows)):
+            missing_stats(spinDirectionRows, pitchTrackingRows)
+        if (len(pitchTrackingRows) > len(runValuesRows)):
+            missing_stats(runValuesRows, pitchTrackingRows)
+        if (len(pitchTrackingRows) > len(pitchMovementRows)):
+            missing_stats(pitchMovementRows, pitchTrackingRows) 
+            
 
-            for i in range(len(pitchMovementRows)):
-                for pitch in pitcher_stats:
-                    if pitch[1] == pitcher4_stats[i][1]:
-                        pitch.extend(pitcher4_stats[i][3:])
+        for i in range(len(pitchMovement_stats)):
+            for pitch in pitchMovement_stats:
+                if pitch[1] == pitchTracking_stats[i][1] and pitch[0] == pitchTracking_stats[i][0]:
+                    pitch.extend(pitchTracking_stats[i][3:])
+
+        for i in range(len(pitchMovement_stats)):
+            for pitch in pitchMovement_stats:
+                if pitch[1] == runValues_stats[i][1] and pitch[0] == runValues_stats[i][0]:
+                    pitch.extend(runValues_stats[i][3:])
+
+        for i in range(len(pitchMovement_stats)):
+            for pitch in pitchMovement_stats:
+                if pitch[1] == spinDirection_stats[i][1] and pitch[0] == spinDirection_stats[i][0]:
+                    pitch.extend(spinDirection_stats[i][3:])
+
     
-            for pitch in pitcher_stats: 
-                pitch.insert(0, player[1])
+        for pitch in pitchMovement_stats: 
+            pitch.insert(0, player[1])
+            pitcher_stats.append(pitch)
 
-        driver.quit()
+driver.quit()
 
 pitchers_df = pd.DataFrame(pitcher_stats, columns=pitcher_headerlist)
 hitters_df = pd.DataFrame(player_stats, columns=hitter_headerlist)
 
 print(pitchers_df)
+print(hitters_df)

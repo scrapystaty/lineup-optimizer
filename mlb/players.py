@@ -39,7 +39,7 @@ for team in teams:
     table = parser.find("div", attrs = {"class": "players"})
 
     # Getting all 'tr' elements, excluding the first one 
-    rows = table.findAll('tr')[1:]
+    rows = table.findAll('tr')
     
     # Extracting player information
     for row in rows:
@@ -50,10 +50,23 @@ for team in teams:
 
         player_info = []
         for a in row.find_all('a'):
+            name = a.getText().strip()
+            id = a.attrs.get('href', 'Not found').split("/")[-1]
+
             player_info.append(team)
-            player_info.append(a.getText().strip())
-            player_info.append(a.attrs.get('href', 'Not found').split("/")[-1])
+            player_info.append(name)
+            
+            if len(id.split("-")) > 1:
+                player_info.append(id)
+            else:    
+                name_and_id = name.lower() + " " + id
+                player_info.append("-".join(name_and_id.split()))
+
+            player_info.append(position)
+        
         if player_info !=  []:
             players.append(player_info)
+
+print(players)
 
 driver.quit()
