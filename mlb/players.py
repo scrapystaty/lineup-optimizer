@@ -67,6 +67,4 @@ for team in teams:
         if player_info !=  []:
             players.append(player_info)
 
-print(players)
-
 driver.quit()
