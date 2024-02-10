@@ -48,7 +48,7 @@ timeout = 25
 driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
 # pitcher function
-def missing_stats(pitches_less, pitches_more):  
+def missing_stats(pitches_less, pitches_more, pitches_less_stats):  
     pitches_needed = []
     for row in pitches_more:
         yearPitch = row.findAll('td')[0].getText().strip() + row.findAll('td')[1].getText().strip()
@@ -65,13 +65,24 @@ def missing_stats(pitches_less, pitches_more):
             missing_pitch.append(pitch)
 
     missing_pitch_arr = []
-    missing_pitch_arr.append(missing_pitch[0][:4])
-    missing_pitch_arr.append(missing_pitch[0][4:])
+    for pitch in missing_pitch:
+        missing_pitch_arr.append(pitch[:4])
+        missing_pitch_arr.append(pitch[4:])   
 
-    for stat in spinDirectionRows[2:]:
+    for stat in pitches_less[2:]:
         missing_pitch_arr.append('') # appends empty string for value to keep the correct amount of cols
     
-    spinDirection_stats.append(missing_pitch_arr) # appends missing pitch
+    for pitch in missing_pitch_arr:
+        pitches_less_stats.append(pitch) # appends missing pitch
+
+def largest_pitch_count():
+    pitch_count = []
+    pitch_count.append(pitchMovementRows)
+    pitch_count.append(pitchTrackingRows)
+    pitch_count.append(runValuesRows)
+    pitch_count.append(spinDirectionRows)
+    return max(pitch_count, key=len)
+
 
 for player in players:
     if player[-1] != "Pitcher":    
@@ -170,12 +181,14 @@ for player in players:
                 row_cells.append(td.getText().strip())
             spinDirection_stats.append(row_cells)
 
-        if (len(pitchTrackingRows) > len(spinDirectionRows)):
-            missing_stats(spinDirectionRows, pitchTrackingRows)
-        if (len(pitchTrackingRows) > len(runValuesRows)):
-            missing_stats(runValuesRows, pitchTrackingRows)
-        if (len(pitchTrackingRows) > len(pitchMovementRows)):
-            missing_stats(pitchMovementRows, pitchTrackingRows) 
+        if (len(largest_pitch_count()) > len(spinDirectionRows)):
+            missing_stats(spinDirectionRows, largest_pitch_count(), spinDirection_stats)
+        if (len(largest_pitch_count()) > len(pitchTrackingRows)):
+            missing_stats(pitchTrackingRows, largest_pitch_count(), pitchTracking_stats)   
+        if (len(largest_pitch_count()) > len(runValuesRows)):
+            missing_stats(runValuesRows, largest_pitch_count(), runValues_stats)
+        if (len(largest_pitch_count()) > len(pitchMovementRows)):
+            missing_stats(pitchMovementRows, largest_pitch_count(), pitchMovement_stats) 
             
 
         for i in range(len(pitchMovement_stats)):
@@ -192,7 +205,6 @@ for player in players:
             for pitch in pitchMovement_stats:
                 if pitch[1] == spinDirection_stats[i][1] and pitch[0] == spinDirection_stats[i][0]:
                     pitch.extend(spinDirection_stats[i][3:])
-
     
         for pitch in pitchMovement_stats: 
             pitch.insert(0, player[1])
